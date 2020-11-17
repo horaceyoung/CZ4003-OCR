@@ -36,8 +36,8 @@ def getSkewAngle(cvImage):
 img = cv2.imread('sample01.png', 0)
 
 ret, th1 = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
-th2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 5.5)
-th3 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 5.5)
+th2 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 0)
+th3 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 0)
 titles = ['Original Image', 'Global Thresholding (v = 127)', 'Adaptive Mean Thresholding', 'Adaptive Gaussian Thresholding']
 images = [img, th1, th2, th3]
 
@@ -46,7 +46,6 @@ for i in range(4):
     plt.subplot(2, 2, i+1), plt.imshow(images[i], 'gray')
     plt.title(titles[i])
     plt.xticks([]), plt.yticks([])
-plt.show()
 
 plt.figure(frameon=False)
 plt.imshow(th3, 'gray')
@@ -54,6 +53,14 @@ plt.xticks([]), plt.yticks([])
 plt.savefig('adaptive_threshold.png')
 
 print(pytesseract.image_to_string('adaptive_threshold.png'))
+
+# denoising
+th3 = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5, 5.5)
+plt.figure(frameon=False)
+plt.imshow(th3, 'gray')
+plt.xticks([]), plt.yticks([])
+plt.savefig('denoise.png')
+print(pytesseract.image_to_string('denoise.png'))
 
 # deskewing
 skewed_angle = getSkewAngle(th3)
@@ -67,4 +74,15 @@ plt.imshow(th4, 'gray')
 plt.xticks([]), plt.yticks([])
 plt.savefig('deskewing.png')
 
-print(pytesseract.image_to_string('adaptive_threshold.png'))
+print(pytesseract.image_to_string('deskewing.png'))
+
+#erosion - not optimal
+kernel = np.ones((3,3),np.uint8)
+erosion = cv2.erode(img,kernel,iterations = 2)
+
+plt.figure(frameon=False)
+plt.imshow(erosion, 'gray')
+plt.xticks([]), plt.yticks([])
+plt.savefig('erosion.png')
+
+print(pytesseract.image_to_string('erosion.png'))
