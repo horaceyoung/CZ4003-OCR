@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from PIL import Image
 import pytesseract
-
+from difflib import Se
 
 # Calculate skew angle of an image
 def getSkewAngle(cvImage):
@@ -86,3 +86,57 @@ plt.xticks([]), plt.yticks([])
 plt.savefig('erosion.png')
 
 print(pytesseract.image_to_string('erosion.png'))
+
+# resize the image to 300 dpi
+def set_image_dpi(path, filename, dpi=(300, 300)):
+    img = Image.open(path)
+    img.save(filename, dpi=(300, 300))
+
+img = cv2.medianBlur(img, 3)
+img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 1.5)
+
+kernel = np.ones((3,3),np.uint8)
+img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
+# This section contains all helper functions
+
+# Calculate skew angle of an image
+def get_skew_angle(cvImage):
+    newImage = cvImage.copy()
+    thresh = cv2.threshold(newImage, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)[1]
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (30, 5))
+    dilate = cv2.dilate(thresh, kernel, iterations=5)
+
+    # Find all contours
+    contours, hierarchy = cv2.findContours(dilate, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(contours, key = cv2.contourArea, reverse = True)
+
+    # Find largest contour and surround in min area box
+    largestContour = contours[0]
+    minAreaRect = cv2.minAreaRect(largestContour)
+
+    # Determine the angle. Convert it to the value that was originally used to obtain skewed image
+
+    angle = minAreaRect[-1]
+    if angle < -45:
+        angle = 90 + angle
+    return -1.0 * angle
+
+def rotate_image(cvImage, angle):
+    newImage = cvImage.copy()
+    (h, w) = newImage.shape[:2]
+    center = (w // 2, h // 2)
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    newImage = cv2.warpAffine(newImage, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    return newImage
+
+angle = get_skew_angle(img)
+img = rotate_image(img, -1.0 * angle)
+
+kernel_size = [3, 5, 7, 9, 11]
+constants = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+for kernel in kernel_size:
+    for constant in constants:
+        temp = img.copy()
+        temp = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, kernel, constant)
+        print('Accuracy with kernel size ' + str(kernel) + ' constant ' + str(constant))
+        compute_accuracy(temp)
